@@ -110,8 +110,20 @@ namespace nf {
 		float A = b.y - a.y, B = a.x - b.x, C = (a.y - b.y) * a.x + (b.x - a.x) * a.y;
 		float distance = std::abs(A * mPosition.x + B * mPosition.y + C) / std::sqrt(A * A + B * B);
 
-		if (distance <= mRadius) {
+		if (distance < mRadius && ((mPosition.x < a.x && mPosition.x > b.x) || (mPosition.x > a.x && mPosition.x < b.x) || (mPosition.y < a.y && mPosition.y > b.y) || (mPosition.y > a.y && mPosition.y < b.y))) {
 			return true;
+			/*if (A != 0.f) {
+				float D = std::pow(((2.f * B * C) / (A * A)) + ((2.f * B * mPosition.x) / A) - (2.f * mPosition.y), 2) - 4.f * (((B * B) / (A * A)) + 1.f) * (((C * C) / (A * A)) + ((2.f * C * mPosition.x) / A) + (mPosition.x * mPosition.x) + (mPosition.y * mPosition.y) - (mRadius * mRadius));
+				if (D >= 0.f) {
+					float Y1 = (-((2.f * B * C) / (A * A)) + ((2.f * B * mPosition.x) / A) - (2.f * mPosition.y) + std::sqrt(D)) / (2.f * (((B * B) / (A * A)) + 1.f) * (((C * C) / (A * A))));
+					float Y2 = (-((2.f * B * C) / (A * A)) + ((2.f * B * mPosition.x) / A) - (2.f * mPosition.y) - std::sqrt(D)) / (2.f * (((B * B) / (A * A)) + 1.f) * (((C * C) / (A * A))));
+					float X1 = -((B * Y1 + C) / A);
+					float X2 = -((B * Y2 + C) / A);
+					if ((X1 < a.x && X1 > b.x && Y1 < a.y && Y1 > b.y) || (X1 > a.x && X1 < b.x && Y1 > a.y && Y1 < b.y) || (X2 < a.x && X2 > b.x && Y2 < a.y && Y2 > b.y) || (X2 > a.x && X2 < b.x && Y2 > a.y && Y2 < b.y)) {
+						return true;
+					}
+				}
+			}*/
 		}
 		return false;
 	}
