@@ -10,10 +10,13 @@ namespace nf {
 		bool mIsMovingLeft = false, mIsMovingRight = false, mIsJumping = false, mIsKicking = false;
 		float mMaxXSpeed = PlayerDefaultMaxXSpeed, mBoost = PlayerDefaultBoost, mJumpForce = PlayerDefaultJumpForce;
 
-		//nf::Object mLeg;
+		nf::Object mLeg;
+		float mLegAngle = 90.f;
+		float mLegKickSpeed = LegDefautKickSpeed;
+
 	public:
 		void setup(const nf::Vector2f& position, const nf::Vector2f& speed, const float radius, const float mass, const float bounceCoefficient, const sf::Texture* texture,
-			const nf::PlayerSide side, const sf::Keyboard::Key moveLeftKey, const sf::Keyboard::Key moveRightKey, const sf::Keyboard::Key jumpKey, const sf::Keyboard::Key kickKey);
+			const nf::PlayerSide side, const sf::Keyboard::Key moveLeftKey, const sf::Keyboard::Key moveRightKey, const sf::Keyboard::Key jumpKey, const sf::Keyboard::Key kickKey, const sf::Texture* legTexture);
 
 		void setMoveLeftKey(const sf::Keyboard::Key& moveLeftKey);
 		void setMoveRightKey(const sf::Keyboard::Key& moveRightKey);
@@ -38,11 +41,15 @@ namespace nf {
 		const float getMaxXSpeed() const;
 		const float getBoost() const;
 		const float getJumpForce() const;
+		nf::Object getLeg();
 
 		void update(const sf::Time& deltaTime) override;
+
+		void legUpdate();
 
 		void moveLeft(const sf::Time& deltaTime);
 		void moveRight(const sf::Time& deltaTime);
 		void doJump();
+		void doKick(const sf::Time& deltaTime);
 	};
 }

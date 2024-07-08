@@ -32,6 +32,9 @@ namespace nf {
 	void Object::setRadius(const float radius) {
 		mRadius = radius;
 	}
+	void Object::setOrigin(const nf::Vector2f& origin) {
+		mSprite.setOrigin(origin);
+	}
 	void Object::setMass(const float mass) {
 		mMass = mass;
 	}
@@ -61,8 +64,15 @@ namespace nf {
 	const float Object::getBounceCoefficient() const {
 		return mBounceCoefficient;
 	}
-	const sf::Sprite& Object::getSprite() const {
+	const sf::Sprite& Object::getSprite() const{
 		return mSprite;
+	}
+
+	void Object::rotate(const float angleInDegrees) {
+		mSprite.rotate(angleInDegrees);
+	}
+	void Object::setRotation(const float angleInDegrees) {
+		mSprite.setRotation(angleInDegrees);
 	}
 
 	void Object::update(const sf::Time& deltaTime) {

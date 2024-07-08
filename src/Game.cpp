@@ -12,6 +12,8 @@ namespace nf {
 		mTextureHolder.load(BallTextureName);
 		mTextureHolder.load(LeftPlayerTextureName);
 		mTextureHolder.load(RightPlayerTextureName);
+		mTextureHolder.load(LeftLegTextureName);
+		mTextureHolder.load(RightLegTextureName);
 
 		mBackground.setTexture(*mTextureHolder.get(BackgroundTextureName));
 
@@ -22,9 +24,9 @@ namespace nf {
 		if(mGameMode == nf::GameMode::PvP){
 			nf::Player playerLeft, playerRight;
 			playerLeft.setup(LeftPlayerStartPosition, PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(LeftPlayerTextureName), 
-				nf::PlayerSide::Left, sf::Keyboard::A, sf::Keyboard::D, sf::Keyboard::W, sf::Keyboard::Space);
+				nf::PlayerSide::Left, sf::Keyboard::A, sf::Keyboard::D, sf::Keyboard::W, sf::Keyboard::Space, mTextureHolder.get(LeftLegTextureName));
 			playerRight.setup(RightPlayerStartPosition, PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(RightPlayerTextureName), 
-				nf::PlayerSide::Right, sf::Keyboard::Left, sf::Keyboard::Right, sf::Keyboard::Up, sf::Keyboard::P);
+				nf::PlayerSide::Right, sf::Keyboard::Left, sf::Keyboard::Right, sf::Keyboard::Up, sf::Keyboard::P, mTextureHolder.get(RightLegTextureName));
 			mPlayers.push_back(playerLeft);
 			mPlayers.push_back(playerRight);
 		}
@@ -209,6 +211,9 @@ namespace nf {
 				if (iterBalls->isColliding(*iterPlayers)) {
 					iterBalls->resolveCollision(*iterPlayers);
 				}
+				if (iterBalls->isColliding(iterPlayers->getLeg())) {
+					iterBalls->resolveCollision(iterPlayers->getLeg());
+				}
 				iterPlayers++;
 			}
 			iterBalls++;
@@ -273,6 +278,7 @@ namespace nf {
 		auto iterPlayers = mPlayers.begin();
 		while (iterPlayers != mPlayers.end()) {
 			mWindow.draw(iterPlayers->getSprite());
+			mWindow.draw(iterPlayers->getLeg().getSprite());
 			iterPlayers++;
 		}
 

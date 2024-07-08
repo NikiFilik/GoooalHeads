@@ -22,8 +22,14 @@ namespace nf {
 	const float PlayerDefaultMaxXSpeed = 600.f;
 	const float PlayerDefaultBoost = 2000.f;
 	const float PlayerDefaultJumpForce = 500.f;
-	const nf::Vector2f LeftPlayerStartPosition(540.f, 810.f), RightPlayerStartPosition(1380.f, 810.f);
+	const nf::Vector2f LeftPlayerStartPosition(540.f, 910.f), RightPlayerStartPosition(1380.f, 910.f);
 	const nf::Vector2f PlayerStartSpeed(0.f, 0.f);
 	const float PlayerDefaultRadius = 50.f, PlayerDefaultMass = 4.f, PlayerDefaultBounceCoefficient = 0.f;
 	const std::string LeftPlayerTextureName = "media/textures/playerLeft.png", RightPlayerTextureName = "media/textures/playerRight.png";
+
+	const float LegDefaulRadius = 20.f;
+	const float LegDefaultMass = 1.f;
+	const float LegDefaultBounceCoefficient = 1.f;
+	const float LegDefautKickSpeed = 1000.f;
+	const std::string LeftLegTextureName = "media/textures/legLeft.png", RightLegTextureName = "media/textures/legRight.png";
 }

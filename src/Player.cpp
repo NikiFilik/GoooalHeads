@@ -2,7 +2,7 @@
 
 namespace nf {
 	void Player::setup(const nf::Vector2f& position, const nf::Vector2f& speed, const float radius, const float mass, const float bounceCoefficient, const sf::Texture* texture, 
-		const nf::PlayerSide side, const sf::Keyboard::Key moveLeftKey, const sf::Keyboard::Key moveRightKey, const sf::Keyboard::Key jumpKey, const sf::Keyboard::Key kickKey) {
+		const nf::PlayerSide side, const sf::Keyboard::Key moveLeftKey, const sf::Keyboard::Key moveRightKey, const sf::Keyboard::Key jumpKey, const sf::Keyboard::Key kickKey, const sf::Texture* legTexture) {
 		Object::setup(position, speed, radius, mass, bounceCoefficient, texture);
 		mSide = side;
 		mMoveLeftKey = moveLeftKey;
@@ -10,6 +10,13 @@ namespace nf {
 		mJumpKey = jumpKey;
 		mKickKey = kickKey;
 
+		mLeg.setPosition(mPosition);
+		mLeg.setSpeed(mSpeed);
+		mLeg.setRadius(LegDefaulRadius);
+		mLeg.setMass(LegDefaultMass);
+		mLeg.setBounceCoefficient(LegDefaultBounceCoefficient);
+		mLeg.setTexture(legTexture);
+		mLeg.setOrigin(nf::Vector2f(LegDefaulRadius, LegDefaulRadius));
 	}
 
 	void Player::setMoveLeftKey(const sf::Keyboard::Key& moveLeftKey) { mMoveLeftKey = moveLeftKey; }
@@ -35,9 +42,11 @@ namespace nf {
 	const float Player::getMaxXSpeed() const { return mMaxXSpeed; }
 	const float Player::getBoost() const { return mBoost; }
 	const float Player::getJumpForce() const { return mJumpForce; }
+	nf::Object Player::getLeg() { return mLeg;  }
 
 	void Player::update(const sf::Time& deltaTime) {
 		Object::update(deltaTime);
+		legUpdate();
 
 		if (mSpeed.x > 0.f) {
 			mSpeed.x = std::max(0.f, mSpeed.x - mBoost * deltaTime.asSeconds());
@@ -46,11 +55,38 @@ namespace nf {
 			mSpeed.x = std::min(0.f, mSpeed.x + mBoost * deltaTime.asSeconds());
 		}
 
+		if (mSide == nf::PlayerSide::Left) {
+			mLegAngle += mLegKickSpeed * deltaTime.asSeconds();
+		}
+		else {
+			mLegAngle -= mLegKickSpeed * deltaTime.asSeconds();
+		}
+
 		if (mIsMovingLeft == true) {
 			moveLeft(deltaTime);
 		}
 		if (mIsMovingRight == true) {
 			moveRight(deltaTime);
+		}
+		if (mIsKicking == true) {
+			doKick(deltaTime);
+		}
+
+		if (mSide == nf::PlayerSide::Right) {
+			if (mLegAngle <= 60.f) {
+				mLegAngle = 60.f;
+			}
+			if (mLegAngle >= 179.f) {
+				mLegAngle = 179.f;
+			}
+		}
+		if (mSide == nf::PlayerSide::Left) {
+			if (mLegAngle <= 1.f) {
+				mLegAngle = 1.f;
+			}
+			if (mLegAngle >= 120.f) {
+				mLegAngle = 120.f;
+			}
 		}
 
 		if (mSpeed.x != 0.f) {
@@ -63,6 +99,34 @@ namespace nf {
 		mSprite.setScale(1.f, 1.f + std::abs(mSpeed.y) / 4000.f);
 	}
 
+	void Player::legUpdate() {
+		mLeg.setPosition(mPosition + nf::Vector2f((mRadius + mLeg.getRadius()) * std::cos(mLegAngle / 180.f * pi), (mRadius + mLeg.getRadius()) * std::sin(mLegAngle / 180.f * pi)));
+		mLeg.setRotation(mLegAngle + 270.f);
+		if (mSide == nf::PlayerSide::Right) {
+			if (mIsKicking == true) {
+				mLeg.setSpeed(mSpeed + nf::Vector2f(mLegKickSpeed * pi * (mRadius + mLeg.getRadius()) / 180.f * std::cos((mLegAngle + 90.f) / 180.f * pi), mLegKickSpeed * pi * (mRadius + mLeg.getRadius()) / 180.f * std::sin((mLegAngle + 90.f) / 180.f * pi)));
+			}
+			else {
+				mLeg.setSpeed(mSpeed + nf::Vector2f(mLegKickSpeed * pi * (mRadius + mLeg.getRadius()) / 180.f * std::cos((mLegAngle - 90.f) / 180.f * pi), mLegKickSpeed * pi * (mRadius + mLeg.getRadius()) / 180.f * std::sin((mLegAngle - 90.f) / 180.f * pi)));
+			}
+		}
+		if (mSide == nf::PlayerSide::Left) {
+			if (mIsKicking == true) {
+				mLeg.setSpeed(mSpeed + nf::Vector2f(mLegKickSpeed * pi * (mRadius + mLeg.getRadius()) / 180.f * std::cos((mLegAngle - 90.f) / 180.f * pi), mLegKickSpeed * pi * (mRadius + mLeg.getRadius()) / 180.f * std::sin((mLegAngle - 90.f) / 180.f * pi)));
+			}
+			else {
+				mLeg.setSpeed(mSpeed + nf::Vector2f(mLegKickSpeed * pi * (mRadius + mLeg.getRadius()) / 180.f * std::cos((mLegAngle + 90.f) / 180.f * pi), mLegKickSpeed * pi * (mRadius + mLeg.getRadius()) / 180.f * std::sin((mLegAngle + 90.f) / 180.f * pi)));
+			}
+		}
+		if (mLegAngle > 360.f) {
+			mLegAngle -= 360.f;
+		}
+		if (mLegAngle < 0.f) {
+			mLegAngle += 360.f;
+		}
+
+	}
+
 	void Player::moveLeft(const sf::Time& deltaTime) {
 		mSpeed.x = std::max(-mMaxXSpeed, mSpeed.x - 2 * mBoost * deltaTime.asSeconds());
 	}
@@ -71,5 +135,13 @@ namespace nf {
 	}
 	void Player::doJump() {
 		mSpeed.y -= mJumpForce;
+	}
+	void Player::doKick(const sf::Time& deltaTime) {
+		if (mSide == nf::PlayerSide::Left) {
+			mLegAngle -= 2 * mLegKickSpeed * deltaTime.asSeconds();
+		}
+		else {
+			mLegAngle += 2 * mLegKickSpeed * deltaTime.asSeconds();
+		}
 	}
 }

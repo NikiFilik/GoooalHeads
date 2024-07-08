@@ -23,6 +23,7 @@ namespace nf {
 		void setPosition(const nf::Vector2f& position);
 		void setSpeed(const nf::Vector2f& speed);
 		void setRadius(const float radius);
+		void setOrigin(const nf::Vector2f& origin);
 		void setMass(const float mass);
 		void setBounceCoefficient(const float bounceCoefficient);
 		void setSprite(const sf::Sprite& sprite);
@@ -34,6 +35,9 @@ namespace nf {
 		const float getMass() const;
 		const float getBounceCoefficient() const;
 		const sf::Sprite& getSprite() const;
+
+		void rotate(const float angleInDegrees);
+		void setRotation(const float angleInDegrees);
 
 		virtual void update(const sf::Time& deltaTime);
 
