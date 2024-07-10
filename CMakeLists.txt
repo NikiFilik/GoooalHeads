@@ -24,6 +24,7 @@ add_executable("${PROJECT_NAME}"
 	inc/Object.hpp src/Object.cpp
 	inc/Ball.hpp src/Ball.cpp
 	inc/Player.hpp src/Player.cpp
+	inc/Bonus.hpp src/Bonus.cpp
 	inc/TextureHolder.hpp src/TextureHolder.cpp
 	inc/Vector2f.hpp src/Vector2f.cpp
 	inc/functions.hpp src/functions.cpp

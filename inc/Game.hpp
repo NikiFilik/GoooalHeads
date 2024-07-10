@@ -6,6 +6,7 @@
 #include "Object.hpp"
 #include "Ball.hpp"
 #include "Player.hpp"
+#include "Bonus.hpp"
 
 namespace nf {
 	class Game {
@@ -25,6 +26,16 @@ namespace nf {
 
 		std::vector<nf::Ball> mBalls;
 		std::vector<nf::Player> mPlayers;
+		std::vector<nf::Bonus> mBonuses;
+
+		int mScoreLeft = 0, mScoreRight = 0;
+		sf::Font mFont;
+		sf::Text mTextScore1, mTextScore2, mGoalSign;
+		bool mGoalFlag = false;
+		nf::PlayerSide mLastGoal;
+		sf::Clock mAfterGoalClock;
+
+		sf::Clock mLowGravityClock, mBouncyBallClock, mDeflatedBallClock, mHighJumpClock, mLowJumpClock, mHighSpeedClock, mLowSpeedClock, mSmallGatesClock, mBigGatesClock;
 		
 	private:
 		void processInput();
@@ -40,6 +51,14 @@ namespace nf {
 		void update(const sf::Time& deltaTime);
 
 		void render();
+
+		void startPosition();
+		void goalCheck();
+
+		void bonusSpawn();
+
+		void bonusActivator(nf::BonusType bonusType, nf::Ball& ball);
+		void bonusDeactivator();
 	public:
 		Game(nf::GameMode gameMode);
 		void run();

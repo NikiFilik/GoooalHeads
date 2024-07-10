@@ -43,6 +43,7 @@ namespace nf {
 	const float Player::getBoost() const { return mBoost; }
 	const float Player::getJumpForce() const { return mJumpForce; }
 	nf::Object Player::getLeg() { return mLeg;  }
+	nf::PlayerSide Player::getSide() { return mSide; }
 
 	void Player::update(const sf::Time& deltaTime) {
 		Object::update(deltaTime);
