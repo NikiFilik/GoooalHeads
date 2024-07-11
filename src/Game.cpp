@@ -4,12 +4,17 @@
 #include "globalConsts.hpp"
 
 namespace nf {
-	Game::Game(nf::GameMode gameMode) : mWindow(sf::VideoMode(WindowWidth, WindowHeight), "GoooalHeads", sf::Style::Fullscreen) {
+	Game::Game(nf::GameMode gameMode, int maxNumOfGoals) : mWindow(sf::VideoMode(WindowWidth, WindowHeight), "GoooalHeads", sf::Style::Fullscreen) {
 		mWindow.setVerticalSyncEnabled(true);
 
 		mGameMode = gameMode;
+		mMaxNumOfGoals = maxNumOfGoals;
+
+		mFont.loadFromFile(FontName);
 
 		mTextureHolder.load(BackgroundTextureName);
+		mTextureHolder.load(LeftGatesTextureName);
+		mTextureHolder.load(RightGatesTextureName);
 
 		mTextureHolder.load(BallTextureName);
 
@@ -20,16 +25,24 @@ namespace nf {
 
 		mTextureHolder.load(LowGravityTextureName);
 		mTextureHolder.load(BouncyBallTextureName);
+		mTextureHolder.load(BallBouncyTextureName);
 		mTextureHolder.load(DeflatedBallTextureName);
+		mTextureHolder.load(BallDeflatedTextureName);
 		mTextureHolder.load(HighJumpTextureName);
 		mTextureHolder.load(LowJumpTextureName);
 		mTextureHolder.load(HighSpeedTextureName);
 		mTextureHolder.load(LowSpeedTextureName);
 		mTextureHolder.load(SmallGatesTextureName);
+		mTextureHolder.load(LeftSmallGatesTextureName);
+		mTextureHolder.load(RightSmallGatesTextureName);
 		mTextureHolder.load(BigGatesTextureName);
+		mTextureHolder.load(LeftBigGatesTextureName);
+		mTextureHolder.load(RightBigGatesTextureName);
 
 
 		mBackground.setTexture(*mTextureHolder.get(BackgroundTextureName));
+		mLeftGatesSprite.setTexture(*mTextureHolder.get(LeftGatesTextureName));
+		mRightGatesSprite.setTexture(*mTextureHolder.get(RightGatesTextureName));
 
 		nf::Ball ball;
 		ball.setup(BallStartPosition, BallStartSpeed, BallDefaultRadius, BallDefaultMass, BallDefaultBounceCoefficient, mTextureHolder.get(BallTextureName));
@@ -46,6 +59,43 @@ namespace nf {
 		}
 
 		mBalls[0].setLastTouched(&mPlayers[0]);
+
+
+		mTextScoreLeft.setFont(mFont);
+		mTextScoreRight.setFont(mFont);
+		mGoalText.setFont(mFont);
+
+		mTextScoreLeft.setFillColor(sf::Color::White);
+		mTextScoreRight.setFillColor(sf::Color::White);
+		mGoalText.setFillColor(sf::Color::White);
+
+		mTextScoreLeft.setOutlineColor(sf::Color::Black);
+		mTextScoreRight.setOutlineColor(sf::Color::Black);
+		mGoalText.setOutlineColor(sf::Color::Black);
+
+		mTextScoreLeft.setOutlineThickness(4);
+		mTextScoreRight.setOutlineThickness(4);
+		mGoalText.setOutlineThickness(8);
+
+		mTextScoreLeft.setCharacterSize(180);
+		mTextScoreRight.setCharacterSize(180);
+		mGoalText.setCharacterSize(300);
+
+		mTextScoreLeft.setString(std::to_string(mScoreLeft));
+		mTextScoreRight.setString(std::to_string(mScoreRight));
+		mGoalText.setString(L"цнннк!");
+
+		sf::FloatRect textRect = mTextScoreLeft.getLocalBounds();
+		mTextScoreLeft.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
+		mTextScoreLeft.setPosition(sf::Vector2f(120.f, 120.f));
+
+		textRect = mTextScoreRight.getLocalBounds();
+		mTextScoreRight.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
+		mTextScoreRight.setPosition(sf::Vector2f(1800.f, 120.f));
+
+		textRect = mGoalText.getLocalBounds();
+		mGoalText.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
+		mGoalText.setPosition(sf::Vector2f(WindowWidth / 2.0f, WindowHeight / 2.0f));
 	}
 
 
@@ -60,7 +110,7 @@ namespace nf {
 		while (mWindow.isOpen()) {
 			mGoalFlag = false;
 			startPosition();
-			while (mWindow.isOpen() && (!mGoalFlag || mAfterGoalClock.getElapsedTime().asSeconds() < TimeAfterGoal)) {
+			while (mWindow.isOpen() && (!mGoalFlag || mAfterGoalClock.getElapsedTime().asSeconds() < TimeAfterGoal.asSeconds())) {
 				timeSinceLastUpdate = clock.restart();
 				timeSinceLastFrame += timeSinceLastUpdate;
 				timeSinceLastBonusSpawn += timeSinceLastUpdate;
@@ -202,6 +252,134 @@ namespace nf {
 				iterPlayers++;
 			}
 		}
+
+		nf::Vector2f leftCrossbar(mLeftGates[1].x, (mLeftGates[1].y + mLeftGates[2].y) / 2.f);
+		auto iterBalls = mBalls.begin();
+		while (iterBalls != mBalls.end()) {
+			bool isColliding;
+			nf::Vector2f deltaPosition = iterBalls->getPosition() - leftCrossbar;
+			if (std::pow(deltaPosition.x, 2.f) + std::pow(deltaPosition.y, 2.f) <= std::pow(iterBalls->getRadius() + ((mLeftGates[1].y - mLeftGates[2].y) / 2.f), 2.f)) {
+				isColliding = true;
+			}
+			else {
+				isColliding = false;
+			}
+			if (isColliding) {
+				nf::Vector2f deltaPosition = leftCrossbar - iterBalls->getPosition();
+
+				float distance = deltaPosition.length();
+				float requiredDistance = iterBalls->getRadius() + ((mLeftGates[1].y - mLeftGates[2].y) / 2.f);
+
+				nf::Vector2f unitNormalVector = deltaPosition.normalized();
+				nf::Vector2f unitTangentVector(-unitNormalVector.y, unitNormalVector.x);
+
+				iterBalls->setPosition(iterBalls->getPosition() - unitNormalVector * (requiredDistance - distance));
+
+				float thisNormalSpeed = nf::scalarMultiplication(unitNormalVector, iterBalls->getSpeed());
+				float thisTangentSpeed = nf::scalarMultiplication(unitTangentVector, iterBalls->getSpeed());
+
+				float newThisNormalSpeed, newOtherNormalSpeed;
+				nf::resolveOneDimensionalCollision(iterBalls->getMass(), 1000000.f, thisNormalSpeed, 0.f, newThisNormalSpeed, newOtherNormalSpeed);
+
+				iterBalls->setSpeed(unitNormalVector * newThisNormalSpeed + unitTangentVector * thisTangentSpeed);
+			}
+			iterBalls++;
+		}
+		auto iterPlayers = mPlayers.begin();
+		while (iterPlayers != mPlayers.end()) {
+			bool isColliding;
+			nf::Vector2f deltaPosition = iterPlayers->getPosition() - leftCrossbar;
+			if (std::pow(deltaPosition.x, 2.f) + std::pow(deltaPosition.y, 2.f) <= std::pow(iterPlayers->getRadius() + ((mLeftGates[1].y - mLeftGates[2].y) / 2.f), 2.f)) {
+				isColliding = true;
+			}
+			else {
+				isColliding = false;
+			}
+			if (isColliding) {
+				nf::Vector2f deltaPosition = leftCrossbar - iterPlayers->getPosition();
+
+				float distance = deltaPosition.length();
+				float requiredDistance = iterPlayers->getRadius() + ((mLeftGates[1].y - mLeftGates[2].y) / 2.f);
+
+				nf::Vector2f unitNormalVector = deltaPosition.normalized();
+				nf::Vector2f unitTangentVector(-unitNormalVector.y, unitNormalVector.x);
+
+				iterPlayers->setPosition(iterPlayers->getPosition() - unitNormalVector * (requiredDistance - distance));
+
+				float thisNormalSpeed = nf::scalarMultiplication(unitNormalVector, iterPlayers->getSpeed());
+				float thisTangentSpeed = nf::scalarMultiplication(unitTangentVector, iterPlayers->getSpeed());
+
+				float newThisNormalSpeed, newOtherNormalSpeed;
+				nf::resolveOneDimensionalCollision(iterPlayers->getMass(), 1000000.f, thisNormalSpeed, 0.f, newThisNormalSpeed, newOtherNormalSpeed);
+
+				iterPlayers->setSpeed(unitNormalVector * newThisNormalSpeed + unitTangentVector * thisTangentSpeed);
+			}
+			iterPlayers++;
+		}
+
+		nf::Vector2f rightCrossbar(mRightGates[1].x, (mRightGates[1].y + mRightGates[2].y) / 2.f);
+		iterBalls = mBalls.begin();
+		while (iterBalls != mBalls.end()) {
+			bool isColliding;
+			nf::Vector2f deltaPosition = iterBalls->getPosition() - rightCrossbar;
+			if (std::pow(deltaPosition.x, 2.f) + std::pow(deltaPosition.y, 2.f) <= std::pow(iterBalls->getRadius() + ((mRightGates[1].y - mRightGates[2].y) / 2.f), 2.f)) {
+				isColliding = true;
+			}
+			else {
+				isColliding = false;
+			}
+			if (isColliding) {
+				nf::Vector2f deltaPosition = rightCrossbar - iterBalls->getPosition();
+
+				float distance = deltaPosition.length();
+				float requiredDistance = iterBalls->getRadius() + ((mRightGates[1].y - mRightGates[2].y) / 2.f);
+
+				nf::Vector2f unitNormalVector = deltaPosition.normalized();
+				nf::Vector2f unitTangentVector(-unitNormalVector.y, unitNormalVector.x);
+
+				iterBalls->setPosition(iterBalls->getPosition() - unitNormalVector * (requiredDistance - distance));
+
+				float thisNormalSpeed = nf::scalarMultiplication(unitNormalVector, iterBalls->getSpeed());
+				float thisTangentSpeed = nf::scalarMultiplication(unitTangentVector, iterBalls->getSpeed());
+
+				float newThisNormalSpeed, newOtherNormalSpeed;
+				nf::resolveOneDimensionalCollision(iterBalls->getMass(), 1000000.f, thisNormalSpeed, 0.f, newThisNormalSpeed, newOtherNormalSpeed);
+
+				iterBalls->setSpeed(unitNormalVector * newThisNormalSpeed + unitTangentVector * thisTangentSpeed);
+			}
+			iterBalls++;
+		}
+		iterPlayers = mPlayers.begin();
+		while (iterPlayers != mPlayers.end()) {
+			bool isColliding;
+			nf::Vector2f deltaPosition = iterPlayers->getPosition() - rightCrossbar;
+			if (std::pow(deltaPosition.x, 2.f) + std::pow(deltaPosition.y, 2.f) <= std::pow(iterPlayers->getRadius() + ((mRightGates[1].y - mRightGates[2].y) / 2.f), 2.f)) {
+				isColliding = true;
+			}
+			else {
+				isColliding = false;
+			}
+			if (isColliding) {
+				nf::Vector2f deltaPosition = rightCrossbar - iterPlayers->getPosition();
+
+				float distance = deltaPosition.length();
+				float requiredDistance = iterPlayers->getRadius() + ((mRightGates[1].y - mRightGates[2].y) / 2.f);
+
+				nf::Vector2f unitNormalVector = deltaPosition.normalized();
+				nf::Vector2f unitTangentVector(-unitNormalVector.y, unitNormalVector.x);
+
+				iterPlayers->setPosition(iterPlayers->getPosition() - unitNormalVector * (requiredDistance - distance));
+
+				float thisNormalSpeed = nf::scalarMultiplication(unitNormalVector, iterPlayers->getSpeed());
+				float thisTangentSpeed = nf::scalarMultiplication(unitTangentVector, iterPlayers->getSpeed());
+
+				float newThisNormalSpeed, newOtherNormalSpeed;
+				nf::resolveOneDimensionalCollision(iterPlayers->getMass(), 1000000.f, thisNormalSpeed, 0.f, newThisNormalSpeed, newOtherNormalSpeed);
+
+				iterPlayers->setSpeed(unitNormalVector * newThisNormalSpeed + unitTangentVector * thisTangentSpeed);
+			}
+			iterPlayers++;
+		}
 	}
 	void Game::collisionBallsWithBalls() {
 		auto iterBalls = mBalls.begin();
@@ -255,14 +433,14 @@ namespace nf {
 
 			while (jterPlayers != mPlayers.end()) {
 				if (iterPlayers != jterPlayers) {
-					if (jterPlayers->getPosition().y >= 910.f && iterPlayers->isColliding(*jterPlayers)) {
+					if (jterPlayers->getPosition().y >= 885.f && iterPlayers->isColliding(*jterPlayers)) {
 						canJumpFromAnotherPlayer = true;
 					}
 				}
 				jterPlayers++;
 			}
 
-			if ((iterPlayers->getPosition().y >= 910.f || canJumpFromAnotherPlayer) && iterPlayers->getIsJumping()) {
+			if ((iterPlayers->getPosition().y >= 885.f || canJumpFromAnotherPlayer) && iterPlayers->getIsJumping()) {
 				iterPlayers->doJump();
 			}
 			iterPlayers++;
@@ -314,7 +492,11 @@ namespace nf {
 
 	void Game::render() {
 		mWindow.clear();
+
 		mWindow.draw(mBackground);
+
+		mWindow.draw(mTextScoreLeft);
+		mWindow.draw(mTextScoreRight);
 
 		auto iterBonuses = mBonuses.begin();
 		while (iterBonuses != mBonuses.end()) {
@@ -335,6 +517,15 @@ namespace nf {
 			iterPlayers++;
 		}
 
+		mWindow.draw(mLeftGatesSprite);
+		mWindow.draw(mRightGatesSprite);
+
+		if (mGoalFlag) {
+			mGoalText.setScale(mAfterGoalClock.getElapsedTime().asSeconds() / TimeAfterGoal.asSeconds(), mAfterGoalClock.getElapsedTime().asSeconds() / TimeAfterGoal.asSeconds());
+			//mGoalText.setPosition(sf::Vector2f(WindowWidth / 2.0f + nf::randIntFromRange(-10, 10), WindowHeight / 2.0f + nf::randIntFromRange(-10, 10)));
+			mWindow.draw(mGoalText);
+		}
+
 		mWindow.display();
 	}
 
@@ -343,6 +534,8 @@ namespace nf {
 
 
 	void Game::startPosition() {
+		mGravity = DefaultGravity;
+
 		mBalls[0].setup(BallStartPosition, BallStartSpeed, BallDefaultRadius, BallDefaultMass, BallDefaultBounceCoefficient, mTextureHolder.get(BallTextureName));
 		auto iterBalls = mBalls.begin() + 1;
 		while (iterBalls != mBalls.end()) {
@@ -357,6 +550,28 @@ namespace nf {
 				nf::PlayerSide::Right, sf::Keyboard::Left, sf::Keyboard::Right, sf::Keyboard::Up, sf::Keyboard::P, mTextureHolder.get(RightLegTextureName));
 		}
 
+		if (mGameMode == nf::GameMode::PvP || mGameMode == nf::GameMode::PvE) {
+			mPlayers[0].setMaxXSpeed(PlayerDefaultMaxXSpeed);
+			mPlayers[1].setMaxXSpeed(PlayerDefaultMaxXSpeed);
+		}
+		else {
+			mPlayers[0].setMaxXSpeed(PlayerDefaultMaxXSpeed);
+			mPlayers[1].setMaxXSpeed(PlayerDefaultMaxXSpeed);
+			mPlayers[2].setMaxXSpeed(PlayerDefaultMaxXSpeed);
+			mPlayers[3].setMaxXSpeed(PlayerDefaultMaxXSpeed);
+		}
+
+		if (mGameMode == nf::GameMode::PvP || mGameMode == nf::GameMode::PvE) {
+			mPlayers[0].setJumpForce(PlayerDefaultJumpForce);
+			mPlayers[1].setJumpForce(PlayerDefaultJumpForce);
+		}
+		else {
+			mPlayers[0].setJumpForce(PlayerDefaultJumpForce);
+			mPlayers[1].setJumpForce(PlayerDefaultJumpForce);
+			mPlayers[2].setJumpForce(PlayerDefaultJumpForce);
+			mPlayers[3].setJumpForce(PlayerDefaultJumpForce);
+		}
+
 		mLeftGates[0].y = 660.f;
 		mLeftGates[1].y = 660.f;
 		mLeftGates[2].y = 670.f;
@@ -367,24 +582,34 @@ namespace nf {
 		mRightGates[2].y = 670.f;
 		mRightGates[3].y = 670.f;
 
+		mLeftGatesSprite.setTexture(*mTextureHolder.get(LeftGatesTextureName));
+		mRightGatesSprite.setTexture(*mTextureHolder.get(RightGatesTextureName));
+
 		mBonuses.clear();
 	}
 	void Game::goalCheck() {
 		auto iterBalls = mBalls.begin();
 		while (iterBalls != mBalls.end()) {
-			if (iterBalls->getPosition().x < mLeftGates[1].x && iterBalls->getPosition().y > mLeftGates[2].y) {
-				if (mGoalFlag == false) {
-					mAfterGoalClock.restart();
-				}
-				mGoalFlag = true;
-				mLastGoal = nf::PlayerSide::Left;
-			}
-			if (iterBalls->getPosition().x > mRightGates[1].x && iterBalls->getPosition().y > mRightGates[2].y) {
-				if (mGoalFlag == false) {
-					mAfterGoalClock.restart();
-				}
+			if (iterBalls->getPosition().x < mLeftGates[1].x && iterBalls->getPosition().y > mLeftGates[2].y && mGoalFlag == false) {
+				mAfterGoalClock.restart();
 				mGoalFlag = true;
 				mLastGoal = nf::PlayerSide::Right;
+				mScoreRight++;
+				mTextScoreRight.setString(std::to_string(mScoreRight));
+				sf::FloatRect textRect = mTextScoreRight.getLocalBounds();
+				mTextScoreRight.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
+				mTextScoreRight.setPosition(sf::Vector2f(1800.f, 120.f));
+				
+			}
+			if (iterBalls->getPosition().x > mRightGates[1].x && iterBalls->getPosition().y > mRightGates[2].y && mGoalFlag == false) {
+				mAfterGoalClock.restart();
+				mGoalFlag = true;
+				mLastGoal = nf::PlayerSide::Left;
+				mScoreLeft++;
+				mTextScoreLeft.setString(std::to_string(mScoreLeft));
+				sf::FloatRect textRect = mTextScoreLeft.getLocalBounds();
+				mTextScoreLeft.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
+				mTextScoreLeft.setPosition(sf::Vector2f(120.f, 120.f));
 			}
 			iterBalls++;
 		}
@@ -398,43 +623,65 @@ namespace nf {
 		nf::BonusType type;
 		type = nf::BonusType(nf::randIntFromRange(0, int(nf::BonusType::Count) - 1));
 		nf::Bonus bonus;
+		nf::Vector2f bonusPosition;
+		while (true) {
+			bonusPosition = nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720));
+			auto iterBonuses = mBonuses.begin();
+			bool overlapping = false;
+			while (iterBonuses != mBonuses.end()) {
+				if (std::sqrt((bonusPosition.x - iterBonuses->getPosition().x) * (bonusPosition.x - iterBonuses->getPosition().x) + (bonusPosition.y - iterBonuses->getPosition().y) * (bonusPosition.y - iterBonuses->getPosition().y)) <= 2 * BonusRadius) {
+					overlapping = true;
+					break;
+				}
+				iterBonuses++;
+			}
+			if (!overlapping) {
+				break;
+			}
+		}
 		if (type == nf::BonusType::LowGravity) {
-			bonus.setup(nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720)), BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(LowGravityTextureName));
+			bonus.setup(bonusPosition, BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(LowGravityTextureName));
 			bonus.setBonusType(type);
 		}
 		if (type == nf::BonusType::BouncyBall) {
-			bonus.setup(nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720)), BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(BouncyBallTextureName));
+			bonus.setup(bonusPosition, BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(BouncyBallTextureName));
 			bonus.setBonusType(type);
 		}
 		if (type == nf::BonusType::DeflatedBall) {
-			bonus.setup(nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720)), BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(DeflatedBallTextureName));
+			bonus.setup(bonusPosition, BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(DeflatedBallTextureName));
 			bonus.setBonusType(type);
 		}
 		if (type == nf::BonusType::HighJump) {
-			bonus.setup(nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720)), BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(HighJumpTextureName));
+			bonus.setup(bonusPosition, BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(HighJumpTextureName));
 			bonus.setBonusType(type);
 		}
 		if (type == nf::BonusType::LowJump) {
-			bonus.setup(nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720)), BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(LowJumpTextureName));
+			bonus.setup(bonusPosition, BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(LowJumpTextureName));
 			bonus.setBonusType(type);
 		}
 		if (type == nf::BonusType::HighSpeed) {
-			bonus.setup(nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720)), BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(HighSpeedTextureName));
+			bonus.setup(bonusPosition, BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(HighSpeedTextureName));
 			bonus.setBonusType(type);
 		}
 		if (type == nf::BonusType::LowSpeed) {
-			bonus.setup(nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720)), BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(LowSpeedTextureName));
+			bonus.setup(bonusPosition, BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(LowSpeedTextureName));
 			bonus.setBonusType(type);
 		}
 		if (type == nf::BonusType::SmallGates) {
-			bonus.setup(nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720)), BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(SmallGatesTextureName));
+			bonus.setup(bonusPosition, BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(SmallGatesTextureName));
 			bonus.setBonusType(type);
 		}
 		if (type == nf::BonusType::BigGates) {
-			bonus.setup(nf::Vector2f(nf::randIntFromRange(420, 1500), nf::randIntFromRange(180, 720)), BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(BigGatesTextureName));
+			bonus.setup(bonusPosition, BallStartSpeed, BonusRadius, 0.f, 0.f, mTextureHolder.get(BigGatesTextureName));
 			bonus.setBonusType(type);
 		}
-		mBonuses.push_back(bonus);
+		if (mBonuses.size() < 5) {
+			mBonuses.push_back(bonus);
+		}
+		else {
+			mBonuses.erase(mBonuses.begin());
+			mBonuses.push_back(bonus);
+		}
 	}
 
 
@@ -450,6 +697,7 @@ namespace nf {
 			auto iterBalls = mBalls.begin();
 			while (iterBalls != mBalls.end()) {
 				iterBalls->setBounceCoefficient(BouncyBallBounceCoefficient);
+				iterBalls->setTexture(mTextureHolder.get(BallBouncyTextureName));
 				iterBalls++;
 			}
 			mBouncyBallClock.restart();
@@ -458,6 +706,7 @@ namespace nf {
 			auto iterBalls = mBalls.begin();
 			while (iterBalls != mBalls.end()) {
 				iterBalls->setBounceCoefficient(DeflatedBallBounceCoefficient);
+				iterBalls->setTexture(mTextureHolder.get(BallDeflatedTextureName));
 				iterBalls++;
 			}
 			mDeflatedBallClock.restart();
@@ -484,12 +733,14 @@ namespace nf {
 				mLeftGates[1].y = 780.f;
 				mLeftGates[2].y = 790.f;
 				mLeftGates[3].y = 790.f;
+				mLeftGatesSprite.setTexture(*mTextureHolder.get(LeftSmallGatesTextureName));
 			}
 			else {
 				mRightGates[0].y = 780.f;
 				mRightGates[1].y = 780.f;
 				mRightGates[2].y = 790.f;
 				mRightGates[3].y = 790.f;
+				mRightGatesSprite.setTexture(*mTextureHolder.get(RightSmallGatesTextureName));
 			}
 			mSmallGatesClock.restart();
 		}
@@ -499,12 +750,14 @@ namespace nf {
 				mLeftGates[1].y = 540.f;
 				mLeftGates[2].y = 550.f;
 				mLeftGates[3].y = 550.f;
+				mLeftGatesSprite.setTexture(*mTextureHolder.get(LeftBigGatesTextureName));
 			}
 			else {
 				mRightGates[0].y = 540.f;
 				mRightGates[1].y = 540.f;
 				mRightGates[2].y = 550.f;
 				mRightGates[3].y = 550.f;
+				mRightGatesSprite.setTexture(*mTextureHolder.get(RightBigGatesTextureName));
 			}
 			mBigGatesClock.restart();
 		}
@@ -517,6 +770,7 @@ namespace nf {
 			auto iterBalls = mBalls.begin();
 			while (iterBalls != mBalls.end()) {
 				iterBalls->setBounceCoefficient(BallDefaultBounceCoefficient);
+				iterBalls->setTexture(mTextureHolder.get(BallTextureName));
 				iterBalls++;
 			}
 		}
@@ -524,6 +778,7 @@ namespace nf {
 			auto iterBalls = mBalls.begin();
 			while (iterBalls != mBalls.end()) {
 				iterBalls->setBounceCoefficient(BallDefaultBounceCoefficient);
+				iterBalls->setTexture(mTextureHolder.get(BallTextureName));
 				iterBalls++;
 			}
 		}
@@ -601,6 +856,8 @@ namespace nf {
 			mRightGates[1].y = 660.f;
 			mRightGates[2].y = 670.f;
 			mRightGates[3].y = 670.f;
+			mLeftGatesSprite.setTexture(*mTextureHolder.get(LeftGatesTextureName));
+			mRightGatesSprite.setTexture(*mTextureHolder.get(RightGatesTextureName));
 		}
 		if (mBigGatesClock.getElapsedTime() >= BigGatesTime && (mLeftGates[0].y == 540.f || mRightGates[0].y == 540.f)) {
 			mLeftGates[0].y = 660.f;
@@ -612,6 +869,8 @@ namespace nf {
 			mRightGates[1].y = 660.f;
 			mRightGates[2].y = 670.f;
 			mRightGates[3].y = 670.f;
+			mLeftGatesSprite.setTexture(*mTextureHolder.get(LeftGatesTextureName));
+			mRightGatesSprite.setTexture(*mTextureHolder.get(RightGatesTextureName));
 		}
 	}
 }

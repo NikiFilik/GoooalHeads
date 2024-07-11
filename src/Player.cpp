@@ -97,7 +97,7 @@ namespace nf {
 			mSprite.setRotation(0.f);
 		}
 
-		mSprite.setScale(1.f, 1.f + std::abs(mSpeed.y) / 4000.f);
+		mSprite.setScale(1.f, 1.f + std::abs(mSpeed.y) / 3000.f);
 	}
 
 	void Player::legUpdate() {

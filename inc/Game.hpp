@@ -12,11 +12,13 @@ namespace nf {
 	class Game {
 	public:
 		nf::GameMode mGameMode;
+		int mMaxNumOfGoals;
 
 		sf::RenderWindow mWindow;
 		nf::TextureHolder mTextureHolder;
 
 		sf::Sprite mBackground;
+		sf::Sprite mLeftGatesSprite, mRightGatesSprite;
 		nf::Vector2f mField[11] = {nf::Vector2f(60.f, 960.f), nf::Vector2f(60.f, 720.f), nf::Vector2f(120.f, 360.f), nf::Vector2f(360.f, 120.f), nf::Vector2f(720.f, 60.f), 
 			nf::Vector2f(1200.f, 60.f), nf::Vector2f(1560.f, 120.f), nf::Vector2f(1800.f, 360.f), nf::Vector2f(1860.f, 720.f), nf::Vector2f(1860.f, 960.f), nf::Vector2f(60.f, 960.f)};
 		nf::Vector2f mLeftGates[4] = {nf::Vector2f(0.f, 660.f), nf::Vector2f(240.f, 660.f), nf::Vector2f(240.f, 670.f), nf::Vector2f(0.f, 670.f)};
@@ -30,7 +32,7 @@ namespace nf {
 
 		int mScoreLeft = 0, mScoreRight = 0;
 		sf::Font mFont;
-		sf::Text mTextScore1, mTextScore2, mGoalSign;
+		sf::Text mTextScoreLeft, mTextScoreRight, mGoalText;
 		bool mGoalFlag = false;
 		nf::PlayerSide mLastGoal;
 		sf::Clock mAfterGoalClock;
@@ -60,7 +62,7 @@ namespace nf {
 		void bonusActivator(nf::BonusType bonusType, nf::Ball& ball);
 		void bonusDeactivator();
 	public:
-		Game(nf::GameMode gameMode);
+		Game(nf::GameMode gameMode, int maxNumOfGoals);
 		void run();
 	};
 }
