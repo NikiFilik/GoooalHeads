@@ -43,6 +43,7 @@ namespace nf {
 		const float getJumpForce() const;
 		nf::Object getLeg();
 		nf::PlayerSide getSide();
+		const float getLegAngle();
 
 		void update(const sf::Time& deltaTime) override;
 

@@ -44,6 +44,7 @@ namespace nf {
 	const float Player::getJumpForce() const { return mJumpForce; }
 	nf::Object Player::getLeg() { return mLeg;  }
 	nf::PlayerSide Player::getSide() { return mSide; }
+	const float Player::getLegAngle() { return mLegAngle; }
 
 	void Player::update(const sf::Time& deltaTime) {
 		Object::update(deltaTime);
@@ -76,17 +77,21 @@ namespace nf {
 		if (mSide == nf::PlayerSide::Right) {
 			if (mLegAngle <= 60.f) {
 				mLegAngle = 60.f;
+				mLeg.setSpeed(mSpeed);
 			}
 			if (mLegAngle >= 179.f) {
 				mLegAngle = 179.f;
+				mLeg.setSpeed(mSpeed);
 			}
 		}
 		if (mSide == nf::PlayerSide::Left) {
 			if (mLegAngle <= 1.f) {
 				mLegAngle = 1.f;
+				mLeg.setSpeed(mSpeed);
 			}
 			if (mLegAngle >= 120.f) {
 				mLegAngle = 120.f;
+				mLeg.setSpeed(mSpeed);
 			}
 		}
 

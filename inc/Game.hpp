@@ -43,6 +43,7 @@ namespace nf {
 		void processInput();
 		void processPlayerInput(const sf::Keyboard::Key& key, const bool isPressed);
 		void processPlayerInput(const sf::Mouse::Button& button, const bool isPressed);
+		void computerPlayerActions();
 
 		void gravityEffect(const sf::Time& deltaTime);
 		void collisionWithField();

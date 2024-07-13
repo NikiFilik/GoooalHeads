@@ -2,6 +2,7 @@
 
 #include "functions.hpp"
 #include "globalConsts.hpp"
+#include <iostream>
 
 namespace nf {
 	Game::Game(nf::GameMode gameMode, int maxNumOfGoals) : mWindow(sf::VideoMode(WindowWidth, WindowHeight), "GoooalHeads", sf::Style::Fullscreen) {
@@ -20,6 +21,8 @@ namespace nf {
 
 		mTextureHolder.load(LeftPlayerTextureName);
 		mTextureHolder.load(RightPlayerTextureName);
+		mTextureHolder.load(LeftLeftPlayerTextureName);
+		mTextureHolder.load(RightRightPlayerTextureName);
 		mTextureHolder.load(LeftLegTextureName);
 		mTextureHolder.load(RightLegTextureName);
 
@@ -48,7 +51,7 @@ namespace nf {
 		ball.setup(BallStartPosition, BallStartSpeed, BallDefaultRadius, BallDefaultMass, BallDefaultBounceCoefficient, mTextureHolder.get(BallTextureName));
 		mBalls.push_back(ball);
 
-		if(mGameMode == nf::GameMode::PvP){
+		if(mGameMode == nf::GameMode::PvP || mGameMode == nf::GameMode::PvE){
 			nf::Player playerLeft, playerRight;
 			playerLeft.setup(LeftPlayerStartPosition, PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(LeftPlayerTextureName), 
 				nf::PlayerSide::Left, sf::Keyboard::A, sf::Keyboard::D, sf::Keyboard::W, sf::Keyboard::Space, mTextureHolder.get(LeftLegTextureName));
@@ -56,6 +59,22 @@ namespace nf {
 				nf::PlayerSide::Right, sf::Keyboard::Left, sf::Keyboard::Right, sf::Keyboard::Up, sf::Keyboard::P, mTextureHolder.get(RightLegTextureName));
 			mPlayers.push_back(playerLeft);
 			mPlayers.push_back(playerRight);
+		}
+		if (mGameMode == nf::GameMode::P2vP2) {
+			nf::Player playerLeft, playerRight, playerLeftLeft, playerRightRight;
+			playerLeft.setup(LeftPlayerStartPosition, PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(LeftPlayerTextureName),
+				nf::PlayerSide::Left, sf::Keyboard::A, sf::Keyboard::D, sf::Keyboard::W, sf::Keyboard::Space, mTextureHolder.get(LeftLegTextureName));
+			playerRight.setup(RightPlayerStartPosition, PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(RightPlayerTextureName),
+				nf::PlayerSide::Right, sf::Keyboard::Left, sf::Keyboard::Right, sf::Keyboard::Up, sf::Keyboard::P, mTextureHolder.get(RightLegTextureName));
+
+			playerLeftLeft.setup(LeftPlayerStartPosition - nf::Vector2f(200.f, 0.f), PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(LeftLeftPlayerTextureName),
+				nf::PlayerSide::Left, sf::Keyboard::T, sf::Keyboard::U, sf::Keyboard::Num6, sf::Keyboard::M, mTextureHolder.get(LeftLegTextureName));
+			playerRightRight.setup(RightPlayerStartPosition + nf::Vector2f(200.f, 0.f), PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(RightRightPlayerTextureName),
+				nf::PlayerSide::Right, sf::Keyboard::Numpad4, sf::Keyboard::Numpad6, sf::Keyboard::Numpad8, sf::Keyboard::Numpad0, mTextureHolder.get(RightLegTextureName));
+			mPlayers.push_back(playerLeft);
+			mPlayers.push_back(playerRight);
+			mPlayers.push_back(playerLeftLeft);
+			mPlayers.push_back(playerRightRight);
 		}
 
 		mBalls[0].setLastTouched(&mPlayers[0]);
@@ -107,7 +126,7 @@ namespace nf {
 		sf::Time timeSinceLastUpdate = sf::Time::Zero;
 		sf::Time timeSinceLastFrame = sf::Time::Zero;
 		sf::Time timeSinceLastBonusSpawn = sf::Time::Zero;
-		while (mWindow.isOpen()) {
+		while (mWindow.isOpen() && (mScoreLeft < mMaxNumOfGoals && mScoreRight < mMaxNumOfGoals)) {
 			mGoalFlag = false;
 			startPosition();
 			while (mWindow.isOpen() && (!mGoalFlag || mAfterGoalClock.getElapsedTime().asSeconds() < TimeAfterGoal.asSeconds())) {
@@ -116,6 +135,9 @@ namespace nf {
 				timeSinceLastBonusSpawn += timeSinceLastUpdate;
 
 				processInput();
+				if (mGameMode == nf::GameMode::PvE) {
+					computerPlayerActions();
+				}
 
 				if (timeSinceLastBonusSpawn >= TimePerBonusSpawn) {
 					timeSinceLastBonusSpawn = sf::Time::Zero;
@@ -128,6 +150,12 @@ namespace nf {
 					timeSinceLastFrame = sf::Time::Zero;
 					render();
 				}
+			}
+			if (mScoreLeft == mMaxNumOfGoals) {
+				std::cout << "ËÅÂÀß ÊÎÌÀÍÄÀ ÏÎÁÅÄÈËÀ!" << std::endl;
+			}
+			if (mScoreRight == mMaxNumOfGoals) {
+				std::cout << "ÏÐÀÂÀß ÊÎÌÀÍÄÀ ÏÎÁÅÄÈËÀ!" << std::endl;
 			}
 		}
 	}
@@ -164,21 +192,73 @@ namespace nf {
 		auto iterPlayers = mPlayers.begin();
 		while (iterPlayers != mPlayers.end()) {
 			if (key == iterPlayers->getMoveLeftKey()) {
-				iterPlayers->setIsMovingLeft(isPressed);
+				if (mGameMode != nf::GameMode::PvE || iterPlayers->getSide() == nf::PlayerSide::Right) {
+					iterPlayers->setIsMovingLeft(isPressed);
+				}
 			}
 			if (key == iterPlayers->getMoveRightKey()) {
-				iterPlayers->setIsMovingRight(isPressed);
+				if (mGameMode != nf::GameMode::PvE || iterPlayers->getSide() == nf::PlayerSide::Right) {
+					iterPlayers->setIsMovingRight(isPressed);
+				}
 			}
 			if (key == iterPlayers->getJumpKey()) {
-				iterPlayers->setIsJumping(isPressed);
+				if (mGameMode != nf::GameMode::PvE || iterPlayers->getSide() == nf::PlayerSide::Right) {
+					iterPlayers->setIsJumping(isPressed);
+				}
 			}
 			if (key == iterPlayers->getKickKey()) {
-				iterPlayers->setIsKicking(isPressed);
+				if (mGameMode != nf::GameMode::PvE || iterPlayers->getSide() == nf::PlayerSide::Right) {
+					iterPlayers->setIsKicking(isPressed);
+				}
 			}
 			iterPlayers++;
 		}
 	}
 	void Game::processPlayerInput(const sf::Mouse::Button& button, const bool isPressed) {
+	}
+	void Game::computerPlayerActions() {
+		sf::Time timeToKick = sf::seconds(120.f / LegDefautKickSpeed);
+		sf::Time timeToJumpPeak = sf::seconds(mPlayers[0].getJumpForce() / mGravity.y);
+		float jumpPeak = mPlayers[0].getJumpForce() * timeToJumpPeak.asSeconds() - mGravity.y * timeToJumpPeak.asSeconds() * timeToJumpPeak.asSeconds() / 2.f;
+
+		if (mBalls[0].getPosition().x - mBalls[0].getRadius() < mPlayers[0].getPosition().x + mPlayers[0].getRadius()) {
+			mPlayers[0].setIsMovingLeft(true);
+		}
+		else {
+			mPlayers[0].setIsMovingLeft(false);
+		}
+
+		if (mBalls[0].getPosition().x > 960.f && mPlayers[0].getPosition().x > 300.f) {
+			mPlayers[0].setIsMovingLeft(true);
+		}
+
+		if (mBalls[0].getPosition().x - mBalls[0].getRadius() > mPlayers[0].getPosition().x + mPlayers[0].getRadius() && mBalls[0].getPosition().x < 960.f) {
+			mPlayers[0].setIsMovingRight(true);
+		}
+		else {
+			mPlayers[0].setIsMovingRight(false);
+		}
+
+		if ((mBalls[0].getPosition() + mBalls[0].getSpeed() * timeToJumpPeak.asSeconds()).y < mPlayers[0].getPosition().y - mPlayers[0].getRadius() && 
+			(mBalls[0].getPosition() + mBalls[0].getSpeed() * timeToJumpPeak.asSeconds()).y > mPlayers[0].getPosition().y - mPlayers[0].getRadius() - jumpPeak &&
+			std::abs(mPlayers[0].getPosition().x - mBalls[0].getPosition().x) <= 600.f) {
+			mPlayers[0].setIsJumping(true);
+		}
+		else {
+			mPlayers[0].setIsJumping(false);
+		}
+
+		if ((mBalls[0].getPosition() + mBalls[0].getSpeed() * timeToKick.asSeconds() - mPlayers[0].getPosition() - mPlayers[0].getSpeed() * timeToKick.asSeconds()).x > 0.f && 
+			(mBalls[0].getPosition() + mBalls[0].getSpeed() * timeToKick.asSeconds() - mPlayers[0].getPosition() - mPlayers[0].getSpeed() * timeToKick.asSeconds()).x < 120.f && 
+			(mBalls[0].getPosition() + mBalls[0].getSpeed() * timeToKick.asSeconds() - mPlayers[0].getPosition() - mPlayers[0].getSpeed() * timeToKick.asSeconds()).y > -10.f &&
+			mPlayers[0].getPosition().y < mBalls[0].getPosition().y) {
+			mPlayers[0].setIsKicking(true);
+		}
+		else {
+			if (mPlayers[0].getLegAngle() == 1.f) {
+				mPlayers[0].setIsKicking(false);
+			}
+		}
 	}
 
 
@@ -522,7 +602,9 @@ namespace nf {
 
 		if (mGoalFlag) {
 			mGoalText.setScale(mAfterGoalClock.getElapsedTime().asSeconds() / TimeAfterGoal.asSeconds(), mAfterGoalClock.getElapsedTime().asSeconds() / TimeAfterGoal.asSeconds());
-			//mGoalText.setPosition(sf::Vector2f(WindowWidth / 2.0f + nf::randIntFromRange(-10, 10), WindowHeight / 2.0f + nf::randIntFromRange(-10, 10)));
+			if (mScoreLeft == mMaxNumOfGoals || mScoreRight == mMaxNumOfGoals) {
+				mGoalText.setPosition(sf::Vector2f(WindowWidth / 2.0f + nf::randIntFromRange(-10, 10), WindowHeight / 2.0f + nf::randIntFromRange(-10, 10)));
+			}
 			mWindow.draw(mGoalText);
 		}
 
@@ -537,6 +619,14 @@ namespace nf {
 		mGravity = DefaultGravity;
 
 		mBalls[0].setup(BallStartPosition, BallStartSpeed, BallDefaultRadius, BallDefaultMass, BallDefaultBounceCoefficient, mTextureHolder.get(BallTextureName));
+		if (mScoreLeft != 0 || mScoreRight != 0) {
+			if (mLastGoal == nf::PlayerSide::Left) {
+				mBalls[0].setSpeed(nf::Vector2f(nf::randIntFromRange(100.f, 250.f), nf::randIntFromRange(-100.f, 100.f)));
+			}
+			else {
+				mBalls[0].setSpeed(nf::Vector2f(nf::randIntFromRange(-250.f, -100.f), nf::randIntFromRange(-100.f, 100.f)));
+			}
+		}
 		auto iterBalls = mBalls.begin() + 1;
 		while (iterBalls != mBalls.end()) {
 			mBalls.erase(iterBalls);
@@ -548,6 +638,16 @@ namespace nf {
 				nf::PlayerSide::Left, sf::Keyboard::A, sf::Keyboard::D, sf::Keyboard::W, sf::Keyboard::Space, mTextureHolder.get(LeftLegTextureName));
 			mPlayers[1].setup(RightPlayerStartPosition, PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(RightPlayerTextureName),
 				nf::PlayerSide::Right, sf::Keyboard::Left, sf::Keyboard::Right, sf::Keyboard::Up, sf::Keyboard::P, mTextureHolder.get(RightLegTextureName));
+		}
+		else {
+			mPlayers[0].setup(LeftPlayerStartPosition, PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(LeftPlayerTextureName),
+				nf::PlayerSide::Left, sf::Keyboard::A, sf::Keyboard::D, sf::Keyboard::W, sf::Keyboard::Space, mTextureHolder.get(LeftLegTextureName));
+			mPlayers[1].setup(RightPlayerStartPosition, PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(RightPlayerTextureName),
+				nf::PlayerSide::Right, sf::Keyboard::Left, sf::Keyboard::Right, sf::Keyboard::Up, sf::Keyboard::P, mTextureHolder.get(RightLegTextureName));
+			mPlayers[2].setup(LeftPlayerStartPosition - nf::Vector2f(200.f, 0.f), PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(LeftLeftPlayerTextureName),
+				nf::PlayerSide::Left, sf::Keyboard::T, sf::Keyboard::U, sf::Keyboard::Num6, sf::Keyboard::M, mTextureHolder.get(LeftLegTextureName));
+			mPlayers[3].setup(RightPlayerStartPosition + nf::Vector2f(200.f, 0.f), PlayerStartSpeed, PlayerDefaultRadius, PlayerDefaultMass, PlayerDefaultBounceCoefficient, mTextureHolder.get(RightRightPlayerTextureName),
+				nf::PlayerSide::Right, sf::Keyboard::Numpad4, sf::Keyboard::Numpad6, sf::Keyboard::Numpad8, sf::Keyboard::Numpad0, mTextureHolder.get(RightLegTextureName));
 		}
 
 		if (mGameMode == nf::GameMode::PvP || mGameMode == nf::GameMode::PvE) {

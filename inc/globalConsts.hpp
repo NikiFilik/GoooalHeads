@@ -5,7 +5,7 @@
 namespace nf {
 	const float pi = 3.14159f;
 
-	enum class GameMode {PvP, P2vP2, PvE};
+	enum class GameMode {PvP = 1, P2vP2 = 2, PvE = 3};
 
 	const int WindowWidth = 1920, WindowHeight = 1080;
 	const sf::Time TimePerFrame = sf::seconds(1.f / 60.f);
@@ -16,7 +16,7 @@ namespace nf {
 	const std::string RightGatesTextureName = "media/textures/gatesRight.png";
 
 	const nf::Vector2f DefaultGravity(0.f, 900.f);
-	const sf::Time TimeAfterGoal = sf::seconds(2.f);
+	const sf::Time TimeAfterGoal = sf::seconds(3.f);
 
 	const nf::Vector2f BallStartPosition(960.f, 540.f), BallStartSpeed(0.f, 0.f);
 	const float BallDefaultRadius = 40.f, BallDefaultMass = 10.f, BallDefaultBounceCoefficient = 0.6f;
@@ -30,6 +30,7 @@ namespace nf {
 	const nf::Vector2f PlayerStartSpeed(0.f, 0.f);
 	const float PlayerDefaultRadius = 75.f, PlayerDefaultMass = 40.f, PlayerDefaultBounceCoefficient = 0.f;
 	const std::string LeftPlayerTextureName = "media/textures/playerLeft.png", RightPlayerTextureName = "media/textures/playerRight.png";
+	const std::string LeftLeftPlayerTextureName = "media/textures/playerLeftLeft.png", RightRightPlayerTextureName = "media/textures/playerRightRight.png";
 
 	const float LegDefaulRadius = 30.f;
 	const float LegDefaultMass = 1.f;
@@ -46,7 +47,7 @@ namespace nf {
 	const std::string LowGravityTextureName = "media/textures/bonusLowGravity.png";
 
 	const float BouncyBallBounceCoefficient = 0.95;
-	const sf::Time BouncyBallTime = sf::seconds(7.f);
+	const sf::Time BouncyBallTime = sf::seconds(9.f);
 	const std::string BallBouncyTextureName = "media/textures/ballBouncy.png";
 	const std::string BouncyBallTextureName = "media/textures/bonusBouncyBall.png";
 
@@ -64,11 +65,11 @@ namespace nf {
 	const std::string LowJumpTextureName = "media/textures/bonusLowJump.png";
 
 	const float HighSpeed = 900.f;
-	const sf::Time HighSpeedTime = sf::seconds(7.f);
+	const sf::Time HighSpeedTime = sf::seconds(10.f);
 	const std::string HighSpeedTextureName = "media/textures/bonusHighSpeed.png";
 
 	const float LowSpeed = 300.f;
-	const sf::Time LowSpeedTime = sf::seconds(7.f);
+	const sf::Time LowSpeedTime = sf::seconds(10.f);
 	const std::string LowSpeedTextureName = "media/textures/bonusLowSpeed.png";
 
 	const sf::Time SmallGatesTime = sf::seconds(7.f);
